@@ -1,0 +1,38 @@
+services:
+
+  nginx:
+    ports:
+      - "3000:80"
+  automart-server:
+    build: 
+      context: .
+      args:
+        - NODE_ENV=development
+    volumes:
+      - .:/server
+      - /server/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - MONGO_IP=mongo-db
+      - MONGO_PORT=27017
+      - MONGO_USER=root
+      - MONGO_PASSWORD=rootpassword
+      - MONGO_DB=automart-ai
+      - SESSION_SECRET=secret
+    command: npm run dev
+
+
+  mongo-db:
+    image: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-db:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: rootpassword
+
+volumes:
+  mongo-db:      
