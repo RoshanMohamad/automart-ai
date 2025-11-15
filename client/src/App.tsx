@@ -1,10 +1,12 @@
 import { useState,useEffect } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
+import BlockEditor from './components/BlockEditor'
+import AuthModal from './components/AuthModal'
+import { useAuth } from './hooks/useAuth'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const { user, logout } = useAuth()
 
   useEffect(() => {
     fetch('http://localhost:5000/api/hello')
@@ -19,26 +21,18 @@ function App() {
   
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+      <div className="app-header">
+        {user ? (
+          <div className="user-info">
+            <span>Welcome, {user.username}!</span>
+            <button onClick={logout}>Logout</button>
+          </div>
+        ) : (
+          <button onClick={() => setShowAuthModal(true)}>Login / Sign Up</button>
+        )}
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <BlockEditor />
+      {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
       
     </>
   )
