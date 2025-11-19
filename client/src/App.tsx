@@ -1,53 +1,50 @@
-import { useState } from 'react'
-import BlockEditor from './components/BlockEditor'
-import AuthModal from './components/AuthModal'
-import { useAuth } from './hooks/useAuth'
-import AdminDashboard from './components/admin/AdminDashboard'
-import BlockPage from './components/admin/BlockPage'
-import BlockManager from './components/admin/BlockManager'
+import { useAuth } from './hooks/useAuth';
+import Login from './pages/Login';
+import AdminDashboard from './pages/AdminDashboard';
+import './index.css';
 
 function App() {
-  const [showAuthModal, setShowAuthModal] = useState(false)
-  const { user, logout } = useAuth()
-  const [adminView, setAdminView] = useState<'none' | 'dashboard' | 'blocks' | 'blocksManager'>('none')
+  const { isAuthenticated, isAdmin, loading } = useAuth();
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-md border-b border-slate-700/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-                Automart AI
-              </h1>
-              <div className="hidden md:flex space-x-2">
-                <button onClick={() => setAdminView('dashboard')} className={`px-4 py-2 rounded-lg font-medium transition-all ${adminView === 'dashboard' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}`}>Dashboard</button>
-                <button onClick={() => setAdminView('blocks')} className={`px-4 py-2 rounded-lg font-medium transition-all ${adminView === 'blocks' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}`}>Editor</button>
-                <button onClick={() => setAdminView('blocksManager')} className={`px-4 py-2 rounded-lg font-medium transition-all ${adminView === 'blocksManager' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}`}>Manager</button>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              {user ? (
-                <div className="flex items-center space-x-3">
-                  <span className="text-sm text-slate-300">Welcome, <span className="font-semibold text-cyan-400">{user.username}</span></span>
-                  <button onClick={logout} className="px-4 py-2 bg-slate-700 text-slate-100 rounded-lg font-medium hover:bg-slate-600 transition-all">Logout</button>
-                </div>
-              ) : (
-                <button onClick={() => setShowAuthModal(true)} className="px-6 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all">Login / Sign Up</button>
-              )}
-            </div>
-          </div>
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-cyan-400 mx-auto mb-4"></div>
+          <p className="text-white text-xl">Loading...</p>
         </div>
-      </nav>
-      <main className="pt-20 px-4">
-        {adminView === 'dashboard' && <AdminDashboard />}
-        {adminView === 'blocks' && <BlockPage />}
-        {adminView === 'blocksManager' && <BlockManager />}
-        {adminView === 'none' && <BlockEditor />}
-      </main>
-      {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
+      </div>
+    );
+  }
+
+  // Show login page if not authenticated
+  if (!isAuthenticated) {
+    return <Login />;
+  }
+
+  // Show admin dashboard if authenticated as admin
+  if (isAdmin) {
+    return <AdminDashboard />;
+  }
+
+  // Default: unauthorized access
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center px-4">
+      <div className="max-w-md w-full bg-slate-800/50 backdrop-blur-sm border-2 border-slate-700 rounded-2xl p-8 text-center">
+        <svg className="w-20 h-20 text-red-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <h1 className="text-2xl font-bold text-white mb-2">Unauthorized Access</h1>
+        <p className="text-slate-400 mb-4">You don't have permission to access this page.</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="bg-cyan-500 hover:bg-cyan-600 text-white font-medium py-2 px-6 rounded-lg transition-all duration-300"
+        >
+          Go Back
+        </button>
+      </div>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

@@ -1,97 +1,96 @@
-import { createContext, useState, useEffect } from 'react'
-import type { ReactNode } from 'react'
+import { createContext, useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
 
 interface User {
-  id: string
-  username: string
-  email: string
+  id: string;
+  email: string;
+  role: 'admin' | 'user';
+  name: string;
 }
 
 interface AuthContextType {
-  user: User | null
-  loading: boolean
-  login: (email: string, password: string) => Promise<void>
-  signup: (username: string, email: string, password: string) => Promise<void>
-  logout: () => void
-  checkAuth: () => Promise<void>
+  user: User | null;
+  isAuthenticated: boolean;
+  isAdmin: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
+  loading: boolean;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export { AuthContext }
-
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  const checkAuth = async () => {
-    try {
-      const res = await fetch('/api/v1/users', {
-        credentials: 'include',
-      })
-      if (res.ok) {
-        const data = await res.json()
-        // If we can access protected route, we're logged in
-        // But we need actual user data, so this is a workaround
-        // In production you'd have a /me endpoint
-        if (data.data && data.data.length > 0) {
-          // For now, we'll just set a flag that we're authenticated
-          // but don't have user details until login
-        }
-      }
-    } catch (error) {
-      console.error('Auth check failed:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    checkAuth()
-  }, [])
+    // Check for existing session
+    const checkAuth = async () => {
+      try {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
 
   const login = async (email: string, password: string) => {
-    const res = await fetch('/api/v1/users/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ email, password }),
-    })
+    try {
+      // In production, replace with actual API call
+      const response = await fetch('/api/v1/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-    if (!res.ok) {
-      const data = await res.json()
-      throw new Error(data.message || 'Login failed')
+      if (!response.ok) {
+        throw new Error('Login failed');
+      }
+
+      const userData = await response.json();
+      setUser(userData.user);
+      localStorage.setItem('user', JSON.stringify(userData.user));
+      localStorage.setItem('token', userData.token);
+    } catch {
+      // For demo purposes, allow admin login with specific credentials
+      if (email === 'admin@automart.com' && password === 'admin123') {
+        const adminUser: User = {
+          id: '1',
+          email: 'admin@automart.com',
+          role: 'admin',
+          name: 'Admin User',
+        };
+        setUser(adminUser);
+        localStorage.setItem('user', JSON.stringify(adminUser));
+      } else {
+        throw new Error('Invalid credentials');
+      }
     }
-
-    const data = await res.json()
-    setUser(data.user)
-  }
-
-  const signup = async (username: string, email: string, password: string) => {
-    const res = await fetch('/api/v1/users/signup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ username, email, password }),
-    })
-
-    if (!res.ok) {
-      const data = await res.json()
-      throw new Error(data.message || 'Signup failed')
-    }
-
-    // After signup, auto-login
-    await login(email, password)
-  }
+  };
 
   const logout = () => {
-    setUser(null)
-    // In production, you'd call a logout endpoint to destroy the session
-  }
+    setUser(null);
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+  };
 
-  return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout, checkAuth }}>
-      {children}
-    </AuthContext.Provider>
-  )
-}
+  const value: AuthContextType = {
+    user,
+    isAuthenticated: !!user,
+    isAdmin: user?.role === 'admin',
+    login,
+    logout,
+    loading,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export { AuthContext };
